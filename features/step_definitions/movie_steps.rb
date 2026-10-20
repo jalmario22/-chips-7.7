@@ -20,7 +20,7 @@ end
 Then(/^I should see "(.*)" before "(.*)" in the movie list$/) do |e1, e2|
   #  ensure that that e1 occurs before e2.
   #  page.body is the entire content of the page as a string.
-  expect(page.body.index(e1) > page.body.index(e2)).to be true 
+  expect(page.body.index(e1) < page.body.index(e2)).to be true 
   # pending "Fill in this step in movie_steps.rb"
 end
 
@@ -29,38 +29,33 @@ end
 #  "When I check only the following ratings: PG, G, R"
 
 When(/I check the following ratings: (.*)/) do |rating_list|
-  # HINT: use String#split to split up the rating_list, then
-  #   iterate over the ratings and reuse the "When I check..." or
-  #   "When I uncheck..." steps in lines 89-95 of web_steps.rb
-  rating_list.split(", ").each do |rating|
-    # When /^(?:|I )check (?:the\s+)?"([^"]*)"(?:\s*checkbox)?$/ do
-      check(rating)
-    # end
-    # When /^(?:|I )uncheck (?:the\s+)?"([^"]*)"(?:\s*checkbox)?$/ do
-      uncheck(rating)
-    # end
-  end
-  # pending "Fill in this step in movie_steps.rb"
-end
+  selected_ratings = rating_list.split(",").map(&:strip)
 
-Then(/^I should (not )?see the following movies: (.*)$/) do |no, movie_list|
-  # Take a look at web_steps.rb Then /^(?:|I )should see "([^"]*)"$/
-  movie_list.each do |movie|
-    Then /^(?:|I )should see "([^"]*)"$/ do
-      if no
-        expect(page).to_not have_content(text)
-      else
-        expect(page).to have_content(text)
-      end
+  Movie.all_ratings.each do |rating|
+    if selected_ratings.include?(rating)
+      check(rating)
+    else
+      uncheck(rating)
     end
   end
   # pending "Fill in this step in movie_steps.rb"
 end
 
+Then(/^I should (not )?see the following movies: (.*)$/) do |no, movie_list|
+  movie_list.split(",").each do |movie|
+    movie = movie.strip.delete_prefix('"').delete_suffix('"')
+    if no
+      expect(page).not_to have_content(movie)
+    else
+      expect(page).to have_content(movie)
+    end
+  end
+end
+
 Then(/^I should see all the movies$/) do
   # Make sure that all the movies in the app are visible in the table
-  movies_table.each do |movie|
-    expect(page).to have_content(movie)
+  Movie.all.each do |movie|
+    expect(page).to have_content(movie[:title])
   end
   # pending "Fill in this step in movie_steps.rb"
 end
